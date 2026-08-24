@@ -55,6 +55,41 @@ flowchart LR
     store --> evals[eval_runner + scorers vs golden fixtures]
 ```
 
+## Requirements
+
+### Functional
+
+- FR1 — Ingest PDF, DOCX (legacy .doc with warning), PPTX, XLSX, CSV, EML, MSG, and TXT/MD; unknown types fall back to text extraction with a warning.
+- FR2 — Every input converges on one `ProcessedDocument` contract: structured JSON plus normalized Markdown, with page/bbox provenance on every block and table.
+- FR3 — PDFs are classified (report / deck / scanned) before extraction and routed accordingly.
+- FR4 — Table extraction is a confidence ladder: native office tables, PyMuPDF `find_tables`, Docling TableFormer, spatial whitespace reconstruction; the highest-confidence candidate wins (Docling wins ties on decks).
+- FR5 — OCR (via Docling) applies only to scanned PDFs and deck pages with no usable text layer.
+- FR6 — Email attachments are re-ingested as child documents (`parent_doc_id`), deduplicated by content hash across the run.
+- FR7 — Page images are classified decorative vs data-bearing; data-bearing figures are saved and linked to caption blocks.
+- FR8 — Prompt-ready LLM context output: page anchors, tables interleaved at their page, confidence flags, figure notes, optional token-budgeted chunking.
+- FR9 — Eval harness replays golden fixtures and gates on thresholds (schema, doc class, provenance, table cells, block recall); every run writes versioned artifacts under a `run_id`.
+- FR10 — Graceful degradation everywhere: no optional dependency is required for the core path; failures surface as explicit warnings (password-protected PDF, missing OCR extra, Docling conversion failure), never silent empty output.
+
+### Non-functional
+
+- NFR1 — Local-first: no network calls at runtime; Docling models are cached locally (prefetch supported for air-gapped machines).
+- NFR2 — Deterministic evals: `AMR_DOCLING=0` disables the model-based path so fixtures score identically across machines.
+- NFR3 — Performance: at most one Docling conversion per document (lazy, cached converter); OCR only when needed; page PNG rendering optional.
+- NFR4 — Python 3.10+; permissive-license dependencies only (Docling is MIT).
+- NFR5 — Every routing branch testable without heavy optional deps (fake-adapter pattern); real-Docling test gated by `skipif`.
+- NFR6 — Warnings are first-class quality signals, propagated to the run manifest and into LLM context headers.
+
+## Design decisions (the "why" behind the code)
+
+- **Pydantic contract as the seam.** `ProcessedDocument` isolates consumers (LLM prompts, retrieval, evals) from extractor churn. New extractors change nothing downstream.
+- **doc_id = sha256[:16] of content.** Identity is content, not path — the same attachment arriving twice dedupes automatically and parent/child links survive.
+- **One shared confidence heuristic** (`score_rows`) across all table methods so candidates are directly comparable; 0.7 is the "good enough" line below which fallbacks engage.
+- **Docling over a vision LLM.** Local, MIT-licensed, deterministic-enough, and TableFormer specifically targets borderless/merged financial tables. The adapter interface (`available` / `tables_for_page` / `text_blocks` / `convert_warning`) is deliberately narrow so MinerU or a hosted service could slot in behind it.
+- **`convert_warning()` never triggers a conversion** — status inspection must be side-effect-free, or a report that never needed Docling pays a full model run.
+- **Bbox origin normalization at the adapter boundary.** Docling's bottom-left origin boxes are flipped to PyMuPDF's top-left convention inside the adapter, so the rest of the pipeline has exactly one coordinate system.
+- **`split_header` numeric-cell rule.** A header row is one with no numeric values — labels with digits (`FY25`, `Q2`) are still headers; only numbers/currency/percent (`1200`, `$1,200`, `9%`, `(300)`) mark data rows. Single shared implementation.
+- **LLM context is a separate rendering, not a replacement.** Archival markdown stays stable for diffing/evals; `.llm.md` optimizes for prompting (interleaving, anchors, confidence flags) and can evolve freely.
+
 ## Stage 0: Repo scaffold
 
 - Create the new repo directory (default: sibling folder, e.g. `amr-pipeline/`; avoid colons in the path — the current workspace path broke venv creation), `git init`, first commit per stage.
@@ -130,7 +165,30 @@ Build in this order (dependencies flow downward):
 - `amr-preprocess sample && amr-preprocess eval` — all five gates PASS (table_cell_accuracy ~0.889).
 - `amr-preprocess process samples --llm-context --no-render-pages` — verify `.llm.md` page anchors and low-confidence flags.
 
+## Best practices
+
+Build discipline:
+
+- One commit per stage, each leaving the repo runnable and its tests green. Copy source files from the tested tree rather than rewriting.
+- Never let an optional dependency break the core path: import inside functions, degrade with a warning, and surface each failure once per document (not per page).
+- Fake-adapter pattern for heavy optional deps in tests; `skipif`-gate the real integration test so CI passes without torch installed.
+- Keep confidence scoring shared and comparable across extraction methods; never invent a second scale.
+- Provenance (page, bbox) on every block and table — downstream citation and figure linking depend on it.
+- Env kill switches (`AMR_DOCLING=0`) for any model-based component so evals stay deterministic.
+- Cache expensive converters at module level, keyed by their options; convert each document at most once.
+- Stamp `pipeline_version` into every output so artifacts are traceable to code.
+
+Extension rules:
+
+- New format: add an extractor, register it in `extractors/router.py`, add one golden fixture under `evals/fixtures/<case>/` with `expected.json`.
+- New quality check: add a scorer function and a threshold in `evals/config.yaml`.
+- New table method: emit `ExtractedTable` with `extraction_method` and `score_rows` confidence; plug into the existing ladder rather than bypassing it.
+
+Environment:
+
+- Create the venv outside paths containing special characters (the current workspace path contains a colon, which breaks venv creation).
+- Python 3.10+ is required by both the package and Docling; do not develop against the 3.9 workspace venv.
+
 ## Notes
 
-- Copy source files from the existing repo rather than rewriting: the current tree is the tested state. The work is scaffold + faithful transfer + verification, staged so each commit is runnable.
 - Deferred items (documented, not built): scanned-PDF eval fixture, multi-page table stitching, numeric cell normalization, Docling benchmark on `financial-reports/`, ColPali retrieval branch.
