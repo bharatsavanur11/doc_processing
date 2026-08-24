@@ -1,0 +1,25 @@
+{
+  "filename": "pipeline.xlsx",
+  "doc_class": "sheet",
+  "must_contain": [
+    "Opportunities"
+  ],
+  "tables": [
+    {
+      "headers": [
+        [
+          "Account",
+          "Stage",
+          "Amount"
+        ]
+      ],
+      "rows": [
+        [
+          "Globex",
+          "Commit",
+          "250000"
+        ]
+      ]
+    }
+  ]
+}

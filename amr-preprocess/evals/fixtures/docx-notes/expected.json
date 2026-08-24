@@ -1,0 +1,28 @@
+{
+  "filename": "account-notes.docx",
+  "doc_class": "docx",
+  "must_contain": [
+    "Churn risk",
+    "Expansion"
+  ],
+  "tables": [
+    {
+      "headers": [
+        [
+          "Risk",
+          "Severity"
+        ]
+      ],
+      "rows": [
+        [
+          "Churn",
+          "High"
+        ],
+        [
+          "Support backlog",
+          "Medium"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+thresholds:
+  schema_valid: 1.0
+  doc_class: 0.8
+  provenance_coverage: 0.8
+  table_cell_accuracy: 0.6
+  block_recall: 0.8

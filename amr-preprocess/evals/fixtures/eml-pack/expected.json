@@ -1,0 +1,8 @@
+{
+  "filename": "review-pack.eml",
+  "doc_class": "email",
+  "must_contain": [
+    "AMR review pack"
+  ],
+  "tables": []
+}

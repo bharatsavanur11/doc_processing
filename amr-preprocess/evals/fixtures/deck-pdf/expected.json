@@ -1,0 +1,30 @@
+{
+  "filename": "acme-earnings-deck.pdf",
+  "doc_class": "deck",
+  "must_contain": [
+    "Q2 FY26 Results"
+  ],
+  "tables": [
+    {
+      "headers": [
+        [
+          "Metric",
+          "Q2",
+          "YoY"
+        ]
+      ],
+      "rows": [
+        [
+          "Revenue",
+          "412",
+          "9%"
+        ],
+        [
+          "OpMargin",
+          "31%",
+          "120bps"
+        ]
+      ]
+    }
+  ]
+}

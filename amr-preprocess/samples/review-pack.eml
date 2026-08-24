@@ -1,0 +1,21 @@
+From: ae@example.com
+To: am@example.com
+Subject: AMR review pack
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============9011728306227029486=="
+
+--===============9011728306227029486==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Please process the attached risks.csv for this week's review.
+
+--===============9011728306227029486==
+Content-Type: text/csv
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="risks.csv"
+MIME-Version: 1.0
+
+cmlzayxvd25lcgpDaHVybixBTQpTZWN1cml0eSByZXZpZXcsU0UK
+
+--===============9011728306227029486==--

@@ -1,0 +1,31 @@
+{
+  "filename": "acme-annual-report.pdf",
+  "doc_class": "report",
+  "must_contain": [
+    "Acme Corp FY25 Annual Report",
+    "subscription and services revenue"
+  ],
+  "tables": [
+    {
+      "headers": [
+        [
+          "Segment",
+          "FY25",
+          "FY24"
+        ]
+      ],
+      "rows": [
+        [
+          "Subscription",
+          "1200",
+          "1000"
+        ],
+        [
+          "Services",
+          "300",
+          "250"
+        ]
+      ]
+    }
+  ]
+}
