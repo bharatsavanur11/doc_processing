@@ -4,7 +4,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-artifacts/
+/artifacts/
 evals/fixtures/.eval-runs/
 .pytest_cache/
 .DS_Store
